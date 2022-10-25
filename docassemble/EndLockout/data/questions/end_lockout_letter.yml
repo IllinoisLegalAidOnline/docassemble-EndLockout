@@ -1,0 +1,721 @@
+metadata:
+  title: End lockout letter
+  short title: End lockout letter
+  comment: This program creates a letter asking a landlord to let you back into your rental property.
+  authors:
+    - Matt Newsted
+---
+include:
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ALToolbox:phone-number-validation.yml  
+  - docassemble.ILAO:ilao-interview-framework.yml
+  - docassemble.ILAO:shared-basic-questions.yml
+---
+objects:
+  - rental_property: ALAddress
+  - mailing_address: ALAddress
+  - lockout_methods: DAList
+  - landlords: ALPeopleList.using(ask_number=True, target_number=1)
+---
+code: |
+  ilao_easy_form_title = "End lockout letter"
+  ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/end-illegal-lockout-demand"
+  github_user = 'IllinoisLegalAidOnline'
+  github_repo_name = 'docassemble-EndLockoutLetter'
+---
+# Road map
+sections:
+  - review_answers: Review your answers
+---
+# interview order block
+mandatory: True
+code: |
+  sees_nav_bar
+  set_progress(5)
+  how_to_use
+  accept_terms
+  lockout_definition
+  lockout_options
+  set_progress(20)
+  rental_property.address
+  if rental_property.state != 'IL':
+    not_illinois_property
+  #if not defined('rental_property.county'):
+    #county_page
+  #jurisdiction_page # this is just for debugging
+  method_locks
+  set_progress(40)
+  lockout_date
+  if knows_landlord_name:
+    landlords.gather()
+  if knows_landlord_address:
+    landlord.address.address
+  set_progress(60)
+  user.name.first
+  include_phone
+  letter_date
+  set_progress(80)
+  #preview_form
+  if add_signature == True:
+    user.signature
+  set_progress(100)
+  get_docs_screen
+#  user.delivery_email
+#  if email_sent_ok == True:
+#    ending_screen
+---
+id: welcome
+question: |
+  End lockout letter
+subquestion: |
+  Welcome to Illinois Legal Aid Online's **End lockout letter** Easy Form.
+
+  This program creates a letter that tells your landlord to let you back into your rental property. If your landlord refuses, the letter will be evidence you made the demand. This could help later if you sue your landlord for money you had to spend on a different unit while locked out.
+  
+  A lockout is any action or threat of action that prevents a tenant from living in or accessing their dwelling unit. Learn more about [**lockouts**](https://www.illinoislegalaid.org/legal-information/lockouts).
+field: sees_nav_bar
+---
+id: instructions
+continue button field: how_to_use
+question: |
+  Instructions
+subquestion: |
+  To use this program you will need to know:
+
+  * The rental property address, and
+  * How your landlord is stopping you from using your apartment.
+
+  Set aside 5 to 10 minutes to finish this program. You can log in and save your work to return to later. 
+ 
+  ${ collapse_template(help_example) }  
+
+  Click on **{green words}** to learn what they mean. Some questions have a question mark in a circle ${ fa_icon("question-circle", color_css="#0dcaf0" ) } that also gives help.
+  
+  After you download your letter, you must deliver it to your landlord.
+---
+template: help_example
+subject: |
+  **You can expand sections like this to show more information.**
+content: |  
+  This is an example of help. Click again to hide.
+---
+id: accept terms
+question: |
+  Terms of use
+subquestion: |
+  This program does not provide legal advice. It does not take the place of advice from a lawyer.
+
+  Using this program does not create an attorney-client relationship between you and Illinois Legal Aid Online or its employees.
+
+  ${ collapse_template(get_legal_help) }  
+
+fields:
+  - To continue, you must accept the **[terms of use](https://www.illinoislegalaid.org/about/terms-of-use)**.: accept
+    datatype: checkboxes
+    none of the above: False
+    minlength: 1
+    choices:
+      - I accept the terms of use.
+    validation messages:
+      minlength: |
+        You cannot continue unless you agree to the terms of use. 
+continue button field: accept_terms
+---
+template: get_legal_help
+subject: |
+  **What if I need legal advice?**
+content: |  
+  If you have questions or concerns about your legal problem and want legal advice you should talk to a lawyer.
+  
+  Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+---
+id: lockout_definition
+continue button field: lockout_definition
+question: |
+  What is a lockout?
+subquestion: |
+  In Illinois, a landlord has to file an eviction case in court to force a tenant to move. This is true even if the tenant is behind on rent, if the lease expired, or if there is no written lease.
+  
+  Some landlords try to force a tenant to move by using a "lockout." Lockouts are illegal in Illinois. Examples of lockouts include:
+
+  * Changing locks,
+  * Removing your belongings from the unit,
+  * Blocking entrances,
+  * Removing or disabling appliances (unless needed for repair),
+  * Threatening or injuring you or your roommates or damaging your belongings,
+  * Removing doors or windows of the unit, and
+  * Shutting off the heat, water, electricity, or other essential utilities.
+
+  Only a judge can order a tenant to move out of a house or apartment. If the judge orders a tenant to move, only a sheriff can enforce the Eviction Order. 
+---
+id: lockout_options
+continue button field: lockout_options
+question: |
+  What to do if you are locked out
+subquestion: |
+  You have options:
+
+  * Call the local **police department** or 911. You can show the police officer proof that you live there to help the process.
+  * Call a **housing advocate** or a **lawyer**.
+  * Call the local **Building department** or township.
+  
+    ${ collapse_template(prove_address_help) }  
+  
+  If you would like help finding free or low-cost legal services in your area, use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help).
+---
+template: prove_address_help
+subject: |
+  **How can I prove where I live?**
+content: |  
+    You can use these things to show that you live at a certain address:
+    
+    * Lease
+    * Utility bill
+    * Mail
+    * Online portal used to pay rent
+    * Talking to neighbors
+    * Rental payment receipts
+---
+id: rental property address
+question: |
+  What is the address of the rental property?
+fields:
+  - Street address: rental_property.address
+    address autocomplete: True
+  - Address line 2: rental_property.unit
+    required: False
+  - City: rental_property.city
+  - State: rental_property.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: rental_property.zip
+    required: False
+  - County: rental_property.county
+  - note: |
+      ${ collapse_template(county_lookup_help) }  
+---
+template: county_lookup_help
+subject: |
+  **What if I need help finding the county?**
+content: |  
+    You can use this [**City-to-County Finder**](https://www.statsamerica.org/CityCountyFinder/) to find the county.
+---
+id: not illinois property
+event: not_illinois_property
+question: |
+  Sorry
+subquestion: |
+  The rental property must be in Illinois to use this program.
+buttons:
+  - Exit: exit
+  - Restart: restart
+#---
+#id: county question
+#continue button field: county_page
+#question: |
+#  In which Illinois county do you live?
+#fields:
+#  - County: rental_property.county
+---
+sets: rental_property.county
+code: |
+  rental_property.geocode()
+---
+code: |
+  rental_property.reset_geocoding()
+  rental_property.geocoding_reset = True
+#---
+# using il_courts.xlsx to get IL counties
+#code: |
+#  allowed_courts = ['Circuit']
+#---
+#id: property county
+#continue button field: property_county
+#question: |
+#  In which county is the rental property?
+#fields:
+#  - no label: property_index
+#    code: |
+#      court_list._load_courts()['address_county'].items()
+#---
+#depends on:
+#  - property_index
+#code: |
+#  rental_property.county = court_list.as_court('trial_court', property_index)
+---
+# determines jurisdiction
+depends on:
+  - rental_property.city
+  - rental_property.county
+sets:
+  - jurisdiction
+  - jurisdiction_full
+  - jurisdiction_short
+code: |
+  if rental_property.city.lower() == "chicago":
+    jurisdiction = "ch"
+    jurisdiction_full = "Chicago Residential Landlord Tenant Ordinance (RLTO), (Title 5, Chapter 12, Section 160)"
+    jurisdiction_short = "Chicago RLTO"
+  else:
+    if rental_property.city.lower() == "mount prospect" or rental_property.city.lower() == "mt. prospect" or rental_property.city.lower() == "mt prospect":
+      jurisdiction = "mp"
+      jurisdiction_full = "Mount Prospect Residential Landlord and Tenant Regulations (RLTR), (23.1811(A))"
+      jurisdiction_short = "Mount Prospect RLTR"
+    else:
+      if rental_property.city.lower() == "evanston":
+        jurisdiction = "ev"
+        jurisdiction_full = "Evanston Residential Landlord and Tenant Ordinance (RLTO), (5-3-12-1)"
+        jurisdiction_short = "Evanston RLTO"
+      else:
+        if rental_property.city.lower() == "urbana":
+          jurisdiction = "ur"
+          jurisdiction_full = "Urbana City Code, Section 12.5-25"
+          jurisdiction_short = "Urbana City Code"
+        else:
+          if rental_property.city.lower() == "oak park":
+            jurisdiction = "op"
+            jurisdiction_full = "Oak Park Village Code, Section 12-6-13"
+            jurisdiction_short = "Oak Park Village Code"
+          else:        
+            if rental_property.county.lower() == "cook county" or rental_property.county == "cook":
+              jurisdiction = "cook"
+              jurisdiction_full = "Cook County Residential Tenant and Landlord Ordinance (RTLO), Section 42-813"
+              jurisdiction_short = "Cook County RTLO"
+            else:
+              jurisdiction = "il"
+              jurisdiction_full = "Illinois law"
+              jurisdiction_short = "Illinois law"
+---
+# this question was for debugging purposes only - not used in program
+id: jurisdiction
+continue button field: jurisdiction_page
+question: |
+  Laws that apply - DEBUG
+subquestion: |
+  Based on where you live, the following law applies.
+  
+  ${ jurisdiction_full }
+  
+  Short name: ${ jurisdiction_short }
+  
+  Jurisdiction code: ${ jurisdiction }
+  
+  County: ${ rental_property.county }
+---
+id: lockout method
+question: |
+  Type of lockout
+subquestion: |
+  How were you locked out of your rental property?
+fields:
+  - My locks were changed.: method_locks
+    datatype: yesnowide
+  - My doors or windows were removed.: method_doors
+    datatype: yesnowide
+  - My utilities (gas, electric, water, heat, or phone) were shut off.: method_utilities
+    datatype: yesnowide
+  - My personal property was damaged or removed.: method_personal_property
+    datatype: yesnowide
+  - Appliances in the rental property were damaged or removed.: method_appliances
+    datatype: yesnowide
+    #show if: |
+      #jurisdiction != "ev"
+  - The landlord injured me or my roommates.: method_injury
+    datatype: yesnowide
+  - I was threatened with any of the above things.: method_threats
+    datatype: yesnowide
+  - My landlord did something else that prevents me from living in or accessing my home.: method_other
+    datatype: yesnowide
+validation code: |
+  if not (method_locks or method_doors or method_utilities or method_personal_property or method_appliances or method_injury or method_threats or method_other):
+    validation_error("You need to select at least one choice.", field="method_other")
+---
+sets:
+  - lockout_methods
+code: |
+  if method_locks == True:
+    lockout_methods.append("Removing, adding, or changing locks")
+  if method_doors == True:
+    lockout_methods.append("Removing doors or windows")
+  if method_utilities == True:
+    lockout_methods.append("Interfering with utilities service")
+  if method_appliances == True:
+    lockout_methods.append("Damaging or removing appliances")
+  if method_injury == True:
+    lockout_methods.append("Causing injury to me or my roommates")
+  if method_personal_property == True:
+    lockout_methods.append("Damaging or removing my personal property")
+  lockout_methods.there_are_any = True
+  if method_threats == True:
+    lockout_methods.append("Threatening to prevent me from living in or accessing my unit")
+  if method_other == True:
+    lockout_methods.append("Preventing me from living in or accessing my unit")
+  lockout_methods.there_are_any = True
+  lockout_methods.there_is_another = False
+reconsider: True
+---
+id: lockout date
+question: |
+  When were you locked out of the rental property?
+fields:
+  - Date : lockout_date
+    datatype: date
+    max: ${ today().format("yyyy-MM-dd") }
+---
+id: knows landlord name
+undefine:
+  - landlords[0]
+question: |
+  Do you know your landlord's name?
+subquestion: |
+  This can be a person or a company. It can also be the property manager or the person who collects your rent.
+field: knows_landlord_name
+choices:
+  - Yes: True
+  - No: False
+---
+sets:
+  - landlords[0].name.first
+id: landlord name
+question: |
+  What is your landlord's name?
+subquestion: |
+  This is usually the owner of the property. If you do not know the owner, it can be the property manager or the person who collects your rent.
+fields:
+  - code: |
+      landlords[0].name_fields(person_or_business='unsure')
+---
+id: knows landlord address
+undefine: landlord.address
+question: |
+  % if knows_landlord_name == False:
+  Do you know your landlord's address?
+  % else:
+  Do you know ${ landlords[0].name.full(middle="full") }'s address?  
+  % endif
+field: knows_landlord_address
+choices:
+  - Yes: True
+  - No: False
+---
+id: landlord address
+question: |
+  % if knows_landlord_name == False:
+  What is the landlord's address?
+  % else:
+  What is ${ landlords[0].name.full(middle="full") }'s address?  
+  % endif
+subquestion: |
+  This address will appear on the letter. You can mail or deliver your letter to this address. 
+fields:
+  - Street address: landlord.address.address
+    address autocomplete: True
+  - Address line 2: landlord.address.unit
+    required: False
+  - City: landlord.address.city
+  - State: landlord.address.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: landlord.address.zip
+    required: False
+---
+id: letter date
+question: |
+  When will you deliver your letter?
+subquestion: |
+  You can hand-deliver or mail the letter. If you know the landlord's email address, you can send it by email.
+  
+  Note: This program does not send the letter for you.
+fields:
+  - Date : letter_date
+    datatype: date
+    default: ${ today().format("yyyy-MM-dd") }
+    min: ${ today().format("yyyy-MM-dd") }
+---
+id: contact information
+question: |
+  Your contact information
+subquestion: |
+  What contact information do you want to include in your letter?
+fields:
+  - Phone number: include_phone
+    datatype: yesnowide
+    default: False
+  - Phone: user.phone
+    datatype: al_international_phone
+    show if: 
+      variable: include_phone
+      is: True
+  - Email address: include_email
+    datatype: yesnowide
+    default: False
+  - Email: user.email
+    datatype: email
+    show if: 
+      variable: include_email
+      is: True
+---
+id: preview
+continue button field: preview_form
+#reconsider:
+#  - form['preview']
+question: |
+  Preview
+subquestion: |
+  Great job! Your letter is almost ready.
+
+  Click the image to open it in a new tab. Click **Make changes** to edit your answers.
+  
+  **Remember to come back to this window to continue and sign your form.**
+  
+  ${ al_court_bundle.as_pdf( key='preview' ) }
+
+  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
+
+#${ action_button_html(url_action('review_answers'), label='Make changes', color='info') }
+
+#${ pdf_concatenate(form["preview"], filename="end_lockout_letter.pdf") }
+---
+id: add signature
+question: |
+  Do you want to add your signature to the letter?
+subquestion: |
+  Use this if you want to send your letter by email or text. If you do not add your signature, you will have to print your letter and sign by hand.
+field: add_signature
+choices:
+  - Yes: True
+  - No: False
+---
+question: |
+  Sign your name
+subquestion: |
+  Use the mouse or touchpad on your computer or sign with your finger on your phone.
+signature: user.signature
+under: |
+  ${ user.name.full(middle="full") }
+---
+id: get docs screen
+event: get_docs_screen
+#reconsider: form["final"]
+question: |
+  Download
+subquestion: |
+  Your forms are ready. View and download your forms below. Click **Make changes** to fix any mistakes.
+
+  What's next?
+  
+  1. Sign your letter if you haven't already,
+  2. Keep a copy, and 
+  3. Deliver it to your landlord.
+
+  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
+
+  ${ al_user_bundle.download_list_html() }
+
+  &nbsp;
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+  Thank you for using ILAO Easy Forms!
+under: |
+  % if not user_logged_in():
+  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} Sign-in](${url_of('login', next=interview_url())}) or [**create**](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
+  % endif 
+
+  &nbsp;
+  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=user_info().question_id, easy_form_variable=user_info().variable, local=False,reset=1), label=':comment: Was this program helpful?', color="#181c36", size="md", new_window=True) }
+
+#  ${ al_user_bundle.download_list_html( key='final' ) }
+#
+##  ${ docs_list([ { "label": 'Instructions', "doc": whats_next } , { "label": 'End lockout letter', "doc": form["final"] } ]) } 
+##css: ${ docs_list_css() }
+#field: get_docs_screen
+#buttons:
+#  - ${fa_icon("envelope", color="#0079d0", size="sm")} Email your forms: continue
+#under: |
+#  % if not user_logged_in():
+#  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} Sign-in](${url_of('login', next=interview_url())}) or [register](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
+#  % endif 
+#
+#  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=user_info().question_id, easy_form_variable=user_info().variable, local=False,reset=1), label=':comment: Was this program helpful?', color='info', size="md", new_window=True) }
+---
+objects:
+  - instructions: ALDocument.using(title="Instructions", filename="instructions", enabled=True, has_addendum=False)
+  - letter: ALDocument.using(title="Letter", filename="end_lockout_letter", enabled=True, has_addendum=False)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, letter], filename="end_lockout_letter_packet.pdf", title="Download all forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[instructions, letter], filename="end_lockout_letter_packet.pdf", title="Letter")
+
+#  - al_court_bundle: ALDocumentBundle.using(elements=[form], filename="end_lockout_letter.pdf", title="Letter")
+#  - al_user_bundle: ALDocumentBundle.using(elements=[whats_next, form], filename="end_lockout_letter_packet.pdf", title="All documents to download")
+---
+attachment:
+  name: Instructions
+  variable name: instructions[i]
+  filename: end_lockout_letter_instructions
+  docx template file: end_lockout_letter_instructions.docx
+---
+attachment:
+  name: End lockout letter
+  variable name: letter[i]
+  filename: end_lockout_letter
+  docx template file: end_lockout_letter.docx
+#  valid formats:
+#    - pdf
+#    - docx
+---
+generic object: ALDocumentBundle
+template: x.send_email_template
+subject: |
+  End lockout letter
+content: |
+  Your forms are attached.
+  
+  Thanks for using ILAO Easy Forms!
+  
+  [Illinois Legal Aid Online](https://www.illinoislegalaid.org)
+---
+id: email forms
+question: |
+  Email yourself a copy of the letter
+subquestion: |
+  **This program does not send your letter to the landlord.** You need to deliver it yourself.
+fields:
+  - Your email address: user.delivery_email
+    datatype: email
+continue button label: Send
+---
+template: forms_email
+subject: |
+  End lockout letter
+content: |
+  Your instructions sheet and letter are attached.
+  
+  Thanks for using ILAO Easy Forms!
+  
+  [Illinois Legal Aid Online](https://www.illinoislegalaid.org)
+---
+#code: |
+#  email_sent_ok = send_email(to=user.delivery_email, template=forms_email, attachments=[form["final"], whats_next["final"]])
+---
+#id: email ending screen
+#event: ending_screen
+#question: |
+#  Email sent
+#subquestion: |
+#  Your letter was sent to **${ user.delivery_email }**.
+#  
+#  If you don’t see an email from no-reply@illinoislegalaid.org, check your spam folder.
+#  
+#  This program does not send your letter to the landlord. You need to deliver it yourself.
+#  
+#  Thank you for using ILAO Easy Forms!
+#buttons:
+#  - Delete answers and restart: restart
+#  - Exit: exit
+# 
+############### Review page
+---
+id: review screen
+event: review_answers
+question: |
+  Review screen
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: rental_property.address
+    button: |
+      **Rental property address:**
+      ${ rental_property.on_one_line(bare=True) }
+  - Edit: rental_property.county
+    button: |
+      **Rental property county:**
+      ${ rental_property.county }
+  - Edit: method_locks
+    button: |
+      **Lockout by:**
+      
+      % if method_locks == True:
+        * Removing, adding, or changing locks
+      % endif
+      % if method_doors == True:
+        * Removing doors or windows
+      % endif
+      % if method_utilities == True:
+        * Interfering with utilities service
+      % endif
+      % if method_personal_property == True:
+        * Damaging or removing your personal property
+      % endif
+      % if method_appliances == True:
+        * Damaging or removing appliances
+      % endif
+      % if method_injury == True:
+        * Causing injury to you or your roommates
+      % endif
+      % if method_threats == True:
+        * Threatening you
+      % endif
+      % if method_other == True:
+        * Preventing you from living in or accessing your unit
+      % endif
+  - Edit: lockout_date
+    button: |
+      **Lockout date:**
+      ${format_date(lockout_date)}
+  - Edit: knows_landlord_name
+    button: |
+      **Do you know your landlord's name?**
+      ${ word(yesno(knows_landlord_name)) }
+  - Edit: landlords[0].name.first
+    button: |
+  	  **Landlord name:**
+      ${landlords[0].name.full(middle="full")}
+    show if: knows_landlord_name
+  - Edit: knows_landlord_address
+    button: |
+      **Do you know your landlord's address?**
+      ${ word(yesno(knows_landlord_address)) }
+  - Edit: landlord.address.address
+    button: |
+      **Landlord address:**
+      ${landlord.address.on_one_line(bare=True)}
+    show if: knows_landlord_address
+  - Edit: user.name.first
+    button: |
+      **Your name:**
+      ${user.name.full(middle="full")}
+  - Edit: include_phone
+    button: |
+      **Do you want to list your phone number on the letter?**
+      ${ word(yesno(include_phone)) }
+  - Edit: user.phone
+    button: |
+      **Your phone number:**
+      ${ phone_number_formatted(user.phone) }
+    show if: include_phone
+  - Edit: include_email
+    button: |
+      **Do you want to list your email on the letter?**
+      ${ word(yesno(include_email)) }
+  - Edit: user.email
+    button: |
+      **Your email:**
+      ${ user.email }
+    show if: include_email
+  - Edit: letter_date
+    button: |
+      **Letter date:**
+      ${format_date(letter_date)}
+  - Edit: add_signature
+    button: |
+      **Do you want to add your signature to the letter?**
+      ${ word(yesno(add_signature)) }
+  - Edit: user.signature
+    button: |
+      **Signature:**
+      ${ user.signature }
+    show if: add_signature
