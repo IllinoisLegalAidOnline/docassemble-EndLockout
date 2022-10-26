@@ -21,15 +21,20 @@ code: |
   ilao_easy_form_title = "End lockout letter"
   ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/end-illegal-lockout-demand"
   github_user = 'IllinoisLegalAidOnline'
-  github_repo_name = 'docassemble-EndLockoutLetter'
+  github_repo_name = 'docassemble-EndLockout'
 ---
 # Road map
 sections:
-  - review_answers: Review your answers
+  - section_intro: Start
+  - section_property: Property and lockout details
+  - section_landlord: Landlord info
+  - section_letter: About you and letter date
+  - section_download: Download
 ---
 # interview order block
 mandatory: True
 code: |
+  nav.set_section('section_intro')
   sees_nav_bar
   set_progress(5)
   how_to_use
@@ -37,6 +42,7 @@ code: |
   lockout_definition
   lockout_options
   set_progress(20)
+  nav.set_section('section_property')
   rental_property.address
   if rental_property.state != 'IL':
     not_illinois_property
@@ -46,23 +52,22 @@ code: |
   method_locks
   set_progress(40)
   lockout_date
+  nav.set_section('section_landlord')
   if knows_landlord_name:
     landlords.gather()
   if knows_landlord_address:
     landlord.address.address
   set_progress(60)
+  nav.set_section('section_letter')
   user.name.first
   include_phone
   letter_date
   set_progress(80)
-  #preview_form
   if add_signature == True:
     user.signature
   set_progress(100)
+  nav.set_section('section_download')
   get_docs_screen
-#  user.delivery_email
-#  if email_sent_ok == True:
-#    ending_screen
 ---
 id: welcome
 question: |
@@ -457,27 +462,6 @@ fields:
       variable: include_email
       is: True
 ---
-id: preview
-continue button field: preview_form
-#reconsider:
-#  - form['preview']
-question: |
-  Preview
-subquestion: |
-  Great job! Your letter is almost ready.
-
-  Click the image to open it in a new tab. Click **Make changes** to edit your answers.
-  
-  **Remember to come back to this window to continue and sign your form.**
-  
-  ${ al_court_bundle.as_pdf( key='preview' ) }
-
-  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
-
-#${ action_button_html(url_action('review_answers'), label='Make changes', color='info') }
-
-#${ pdf_concatenate(form["preview"], filename="end_lockout_letter.pdf") }
----
 id: add signature
 question: |
   Do you want to add your signature to the letter?
@@ -527,19 +511,6 @@ under: |
   &nbsp;
   ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=user_info().question_id, easy_form_variable=user_info().variable, local=False,reset=1), label=':comment: Was this program helpful?', color="#181c36", size="md", new_window=True) }
 
-#  ${ al_user_bundle.download_list_html( key='final' ) }
-#
-##  ${ docs_list([ { "label": 'Instructions', "doc": whats_next } , { "label": 'End lockout letter', "doc": form["final"] } ]) } 
-##css: ${ docs_list_css() }
-#field: get_docs_screen
-#buttons:
-#  - ${fa_icon("envelope", color="#0079d0", size="sm")} Email your forms: continue
-#under: |
-#  % if not user_logged_in():
-#  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} Sign-in](${url_of('login', next=interview_url())}) or [register](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
-#  % endif 
-#
-#  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=user_info().question_id, easy_form_variable=user_info().variable, local=False,reset=1), label=':comment: Was this program helpful?', color='info', size="md", new_window=True) }
 ---
 objects:
   - instructions: ALDocument.using(title="Instructions", filename="instructions", enabled=True, has_addendum=False)
@@ -549,8 +520,6 @@ objects:
   - al_user_bundle: ALDocumentBundle.using(elements=[instructions, letter], filename="end_lockout_letter_packet.pdf", title="Download all forms")
   - al_court_bundle: ALDocumentBundle.using(elements=[instructions, letter], filename="end_lockout_letter_packet.pdf", title="Letter")
 
-#  - al_court_bundle: ALDocumentBundle.using(elements=[form], filename="end_lockout_letter.pdf", title="Letter")
-#  - al_user_bundle: ALDocumentBundle.using(elements=[whats_next, form], filename="end_lockout_letter_packet.pdf", title="All documents to download")
 ---
 attachment:
   name: Instructions
@@ -563,9 +532,7 @@ attachment:
   variable name: letter[i]
   filename: end_lockout_letter
   docx template file: end_lockout_letter.docx
-#  valid formats:
-#    - pdf
-#    - docx
+
 ---
 generic object: ALDocumentBundle
 template: x.send_email_template
@@ -578,47 +545,7 @@ content: |
   
   [Illinois Legal Aid Online](https://www.illinoislegalaid.org)
 ---
-id: email forms
-question: |
-  Email yourself a copy of the letter
-subquestion: |
-  **This program does not send your letter to the landlord.** You need to deliver it yourself.
-fields:
-  - Your email address: user.delivery_email
-    datatype: email
-continue button label: Send
----
-template: forms_email
-subject: |
-  End lockout letter
-content: |
-  Your instructions sheet and letter are attached.
-  
-  Thanks for using ILAO Easy Forms!
-  
-  [Illinois Legal Aid Online](https://www.illinoislegalaid.org)
----
-#code: |
-#  email_sent_ok = send_email(to=user.delivery_email, template=forms_email, attachments=[form["final"], whats_next["final"]])
----
-#id: email ending screen
-#event: ending_screen
-#question: |
-#  Email sent
-#subquestion: |
-#  Your letter was sent to **${ user.delivery_email }**.
-#  
-#  If you don’t see an email from no-reply@illinoislegalaid.org, check your spam folder.
-#  
-#  This program does not send your letter to the landlord. You need to deliver it yourself.
-#  
-#  Thank you for using ILAO Easy Forms!
-#buttons:
-#  - Delete answers and restart: restart
-#  - Exit: exit
-# 
 ############### Review page
----
 id: review screen
 event: review_answers
 question: |
@@ -684,6 +611,124 @@ review:
       **Landlord address:**
       ${landlord.address.on_one_line(bare=True)}
     show if: knows_landlord_address
+  - Edit: user.name.first
+    button: |
+      **Your name:**
+      ${user.name.full(middle="full")}
+  - Edit: include_phone
+    button: |
+      **Do you want to list your phone number on the letter?**
+      ${ word(yesno(include_phone)) }
+  - Edit: user.phone
+    button: |
+      **Your phone number:**
+      ${ phone_number_formatted(user.phone) }
+    show if: include_phone
+  - Edit: include_email
+    button: |
+      **Do you want to list your email on the letter?**
+      ${ word(yesno(include_email)) }
+  - Edit: user.email
+    button: |
+      **Your email:**
+      ${ user.email }
+    show if: include_email
+  - Edit: letter_date
+    button: |
+      **Letter date:**
+      ${format_date(letter_date)}
+  - Edit: add_signature
+    button: |
+      **Do you want to add your signature to the letter?**
+      ${ word(yesno(add_signature)) }
+  - Edit: user.signature
+    button: |
+      **Signature:**
+      ${ user.signature }
+    show if: add_signature
+---
+id: property and lockout review screen
+event: section_property
+question: |
+  Property and lockout details
+subquestion: |
+  Click below to edit your answers.
+review:
+  - Edit: rental_property.address
+    button: |
+      **Rental property address:**
+      ${ rental_property.on_one_line(bare=True) }
+  - Edit: rental_property.county
+    button: |
+      **Rental property county:**
+      ${ rental_property.county }
+  - Edit: method_locks
+    button: |
+      **Lockout by:**
+      
+      % if method_locks == True:
+        * Removing, adding, or changing locks
+      % endif
+      % if method_doors == True:
+        * Removing doors or windows
+      % endif
+      % if method_utilities == True:
+        * Interfering with utilities service
+      % endif
+      % if method_personal_property == True:
+        * Damaging or removing your personal property
+      % endif
+      % if method_appliances == True:
+        * Damaging or removing appliances
+      % endif
+      % if method_injury == True:
+        * Causing injury to you or your roommates
+      % endif
+      % if method_threats == True:
+        * Threatening you
+      % endif
+      % if method_other == True:
+        * Preventing you from living in or accessing your unit
+      % endif
+  - Edit: lockout_date
+    button: |
+      **Lockout date:**
+      ${format_date(lockout_date)}
+
+---
+id: landlord info review screen
+event: section_landlord
+question: |
+  Landlord info
+subquestion: |
+  Click below to edit your answers.
+review:
+  - Edit: knows_landlord_name
+    button: |
+      **Do you know your landlord's name?**
+      ${ word(yesno(knows_landlord_name)) }
+  - Edit: landlords[0].name.first
+    button: |
+  	  **Landlord name:**
+      ${landlords[0].name.full(middle="full")}
+    show if: knows_landlord_name
+  - Edit: knows_landlord_address
+    button: |
+      **Do you know your landlord's address?**
+      ${ word(yesno(knows_landlord_address)) }
+  - Edit: landlord.address.address
+    button: |
+      **Landlord address:**
+      ${landlord.address.on_one_line(bare=True)}
+    show if: knows_landlord_address
+---
+id: about you and letter date review screen
+event: section_letter
+question: |
+  About you and letter date
+subquestion: |
+  Click below to edit your answers.
+review:
   - Edit: user.name.first
     button: |
       **Your name:**
