@@ -445,7 +445,7 @@ question: |
   % if knows_landlord_name == False:
   Do you know your landlord's address?
   % else:
-  Do you know ${ landlords[0].name.full(middle="full") }'s address?  
+  Do you know ${ landlords[0].name_full() }'s address?  
   % endif
 field: knows_landlord_address
 choices:
@@ -457,7 +457,7 @@ question: |
   % if knows_landlord_name == False:
   What is the landlord's address?
   % else:
-  What is ${ landlords[0].name.full(middle="full") }'s address?  
+  What is ${ landlords[0].name_full() }'s address?  
   % endif
 subquestion: |
   This address will appear on the letter. You can mail or deliver your letter to this address. 
@@ -526,7 +526,7 @@ subquestion: |
   Use the mouse or touchpad on your computer or sign with your finger on your phone.
 signature: user.signature
 under: |
-  ${ user.name.full(middle="full") }
+  ${ user.name_full() }
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -659,7 +659,7 @@ review:
   - Edit: landlords[0].name.first
     button: |
   	  **Landlord name:**
-      ${landlords[0].name.full(middle="full")}
+      ${landlords[0].name_full()}
     show if: knows_landlord_name
   - Edit: knows_landlord_address
     button: |
@@ -673,7 +673,7 @@ review:
   - Edit: user.name.first
     button: |
       **Your name:**
-      ${user.name.full(middle="full")}
+      ${user.name_full()}
   - Edit: include_phone
     button: |
       **Do you want to list your phone number on the letter?**
@@ -771,7 +771,7 @@ review:
   - Edit: landlords[0].name.first
     button: |
   	  **Landlord name:**
-      ${landlords[0].name.full(middle="full")}
+      ${landlords[0].name_full()}
     show if: knows_landlord_name
   - Edit: knows_landlord_address
     button: |
@@ -794,7 +794,7 @@ review:
   - Edit: user.name.first
     button: |
       **Your name:**
-      ${user.name.full(middle="full")}
+      ${user.name_full()}
   - Edit: include_phone
     button: |
       **Do you want to list your phone number on the letter?**
